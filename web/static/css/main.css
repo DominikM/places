@@ -1,0 +1,32 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.ui.grid {
+    height: 100%;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    padding: 1em;
+}
+
+#sidebar {
+}
+
+#card-container {
+    margin: 2em 0 0 0;
+}
+
+#map-container {
+    height: 100%;
+}
+
+#map {
+    width:100%;
+    height: inherit;
+    background-color: grey;
+}

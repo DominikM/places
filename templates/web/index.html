@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="{% static 'semantic/semantic.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+    <script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+    <script src="{% static 'semantic/semantic.min.js' %}"></script>
+    <title>Places</title>
+</head>
+<body>
+<div id="app">
+    <div class="ui stackable two column grid">
+        <div class="four wide column">
+            <div id="sidebar">
+                <h1 class="ui header">Place Journal</h1>
+                <button class="ui button">Add Place</button>
+                <div id="card-container"></div>
+            </div>
+        </div>
+        <div class="twelve wide column">
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var places = {{ places | safe}};
+    var map;
+    var markers = [];
+    var card_container = $('#card-container');
+    function initMap() {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            var cur_pos = {lat: position.coords.latitude, lng: position.coords.longitude};
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: cur_pos,
+                zoom: 12
+            });
+            setupListeners();
+            createMarkers();
+        });
+    }
+
+    function setupListeners() {
+        map.addListener('click', function(e) {
+            console.log(e.latLng.lat(), e.latLng.lng());
+            //e.stop();
+        });
+    }
+
+    function createMarkers() {
+        places.forEach(function(d) {
+            markers.push(new google.maps.Marker({
+                position: {lat: parseFloat(d.fields.lat), lng: parseFloat(d.fields.lng)},
+                title: d.fields.name,
+                map: map
+            }))
+        })
+    }
+
+    function createPlaceCard(name, last_visited, address, notes) {
+        card = $("<div class='ui centered card'>" +
+                    "<div class='content'>" +
+                        "<div class='header'>" + name + "</div>" +
+                        '<div class="meta">' +
+                            '<div class="address">' + address + '</div>' +
+                        '</div>' +
+                        '<div class="notes">' + notes + '</div>' +
+                        '<div class="meta">' +
+                            '<div class="last-visit">Last visit: ' + last_visited + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="ui bottom attached buttons">' +
+                        '<button class="ui primary button">Check In</button>' +
+                        '<button class="ui secondary button">View Log</button>' +
+                        '<button class="ui negative button">Delete</button>' +
+                    '</div>' +
+                '</div>').appendTo(card_container);
+        return card;
+    }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_api_key }}&libraries=places&callback=initMap"
+        async defer></script>
+
+</body>
+</html>
