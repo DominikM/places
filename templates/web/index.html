@@ -13,11 +13,12 @@
 <div id="app">
     <div class="ui stackable two column grid">
         <div class="four wide column">
-            <div id="sidebar">
-                <h1 class="ui header">Place Journal</h1>
+            <h1 class="ui header">Place Journal</h1>
+            <div id="main-controls">
                 <button class="ui button">Add Place</button>
-                <div id="card-container"></div>
             </div>
+            <div id="selected-container"></div>
+            <div class="ui section divider"></div>
         </div>
         <div class="twelve wide column">
             <div id="map-container">
@@ -28,48 +29,87 @@
 </div>
 
 <script>
-    var places = {{ places | safe}};
-    var map;
-    var markers = [];
-    var card_container = $('#card-container');
+    var data = {
+        places: {{ places | safe}}
+    };
+    var state = {
+        selected: null, // index of places/markers[] that is selected, null if nothing is selected
+        places_changed: false // if the data changed
+    };
+    var ele = {
+        selected_container: $('#selected-container'),
+        selected_card: null,
+        map: null,
+        markers: []
+    };
+
     function initMap() {
         navigator.geolocation.getCurrentPosition(function(position) {
             var cur_pos = {lat: position.coords.latitude, lng: position.coords.longitude};
-            map = new google.maps.Map(document.getElementById("map"), {
+            ele.map = new google.maps.Map(document.getElementById("map"), {
                 center: cur_pos,
                 zoom: 12
             });
+            console.log(data.places);
             setupListeners();
             createMarkers();
         });
     }
 
     function setupListeners() {
-        map.addListener('click', function(e) {
-            console.log(e.latLng.lat(), e.latLng.lng());
-            //e.stop();
+        ele.map.addListener('click', function(e) {
+            e.stop();
         });
     }
 
+    function update() {
+        ele.selected_container.empty();
+
+        if (state.selected !== null) {
+            var sel_data = data.places[state.selected].fields;
+            createPlaceCard(sel_data.name, sel_data.address, sel_data.notes, ""); // TODO: add last visted field
+        }
+
+        if (state.places_changed) {
+            updateMarkers();
+            state.places_changed = false;
+        }
+    }
+
+    function updateMarkers() {
+        removeMarkers();
+        createMarkers();
+    }
+
+    function removeMarkers() {
+        ele.markers.forEach(function(m) {
+            m.setMap(null);
+        });
+        ele.markers = [];
+    }
+
     function createMarkers() {
-        places.forEach(function(d) {
-            markers.push(new google.maps.Marker({
+        data.places.forEach(function(d, i) {
+            var new_marker = new google.maps.Marker({
                 position: {lat: parseFloat(d.fields.lat), lng: parseFloat(d.fields.lng)},
                 title: d.fields.name,
-                map: map
-            }))
+                map: ele.map
+            });
+            new_marker.addListener('click', function() {
+                state.selected = i;
+                update();
+            });
+            ele.markers.push(new_marker)
         })
     }
 
-    function createPlaceCard(name, last_visited, address, notes) {
-        card = $("<div class='ui centered card'>" +
+    function createPlaceCard(name, address, notes, last_visited) {
+        ele.selected_card = $("<div class='ui centered card'>" +
                     "<div class='content'>" +
                         "<div class='header'>" + name + "</div>" +
-                        '<div class="meta">' +
-                            '<div class="address">' + address + '</div>' +
-                        '</div>' +
                         '<div class="notes">' + notes + '</div>' +
                         '<div class="meta">' +
+                            '<div class="address">' + address + '</div>' +
                             '<div class="last-visit">Last visit: ' + last_visited + '</div>' +
                         '</div>' +
                     '</div>' +
@@ -78,8 +118,7 @@
                         '<button class="ui secondary button">View Log</button>' +
                         '<button class="ui negative button">Delete</button>' +
                     '</div>' +
-                '</div>').appendTo(card_container);
-        return card;
+                '</div>').appendTo(ele.selected_container);
     }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_api_key }}&libraries=places&callback=initMap"

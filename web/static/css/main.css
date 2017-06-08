@@ -14,10 +14,7 @@ html, body {
     padding: 1em;
 }
 
-#sidebar {
-}
-
-#card-container {
+#selected-container {
     margin: 2em 0 0 0;
 }
 
