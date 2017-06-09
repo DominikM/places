@@ -3,7 +3,7 @@ from django.db import models
 
 class CheckIn(models.Model):
     date = models.DateField()
-    notes = models.TextField()
+    notes = models.TextField(blank=True)
     place = models.ForeignKey('Place')
 
     def __str__(self):
