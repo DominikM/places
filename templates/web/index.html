@@ -15,7 +15,33 @@
         <div class="four wide column">
             <h1 class="ui header">Place Journal</h1>
             <div id="main-controls">
-                <button class="ui button">Add Place</button>
+                <button class="ui button" onclick="showAddForm()">Add Place</button>
+            </div>
+            <div id="add-card-form-container">
+                <form class="ui form">
+                    <div class="field">
+                        <label>Name</label>
+                        <input type="text" name="name" placeholder="Name of location">
+                    </div>
+                    <div class="field">
+                        <label>Address</label>
+                        <input type="text" name="address" placeholder="Type address or click on map">
+                    </div>
+                    <div class="field">
+                        <label>Notes</label>
+                        <textarea rows="2"></textarea>
+                    </div>
+                    <div class="field">
+                        <label>Last visit</label>
+                        <input type="date" name="last-visit">
+                    </div>
+                    <div class="field">
+                        <label>Notes about last visit</label>
+                        <textarea rows="2"></textarea>
+                    </div>
+                    <button class="ui primary button" onclick="return false;">Submit</button>
+                    <button class="ui negative button" onclick="hideAddForm(); return false;">Cancel</button>
+                </form>
             </div>
             <div id="selected-container"></div>
             <div class="ui section divider"></div>
@@ -34,14 +60,36 @@
     };
     var state = {
         selected: null, // index of places/markers[] that is selected, null if nothing is selected
-        places_changed: false // if the data changed
+        add_place: false, // if the button has been pressed
+        places_changed: false, // if the data changed
+        focus_lat_lng: null, // if focused on place, this is {lat: lat, lng: lmg}, else null
     };
     var ele = {
         selected_container: $('#selected-container'),
+        geocoder: null,
         selected_card: null,
         map: null,
-        markers: []
+        markers: [],
+        autocomplete: null,
+        add_card_form_container: $('#add-card-form-container'),
+        focus_marker: null
     };
+
+    function init() {
+        ele.add_card_form_container.hide();
+        ele.autocomplete = new google.maps.places.Autocomplete(
+                ele.add_card_form_container.find('input[name=address]')[0]
+        );
+        ele.autocomplete.addListener('place_changed', function () {
+            console.log('firing');
+            var place = ele.autocomplete.getPlace();
+            state.focus_lat_lng = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+            };
+            update();
+        });
+    }
 
     function initMap() {
         navigator.geolocation.getCurrentPosition(function(position) {
@@ -50,7 +98,7 @@
                 center: cur_pos,
                 zoom: 12
             });
-            console.log(data.places);
+            ele.geocoder = new google.maps.Geocoder;
             setupListeners();
             createMarkers();
         });
@@ -58,12 +106,34 @@
 
     function setupListeners() {
         ele.map.addListener('click', function(e) {
+            if (state.add_place) {
+                ele.geocoder.geocode({'location': e.latLng}, function(results, status) {
+                    if (status === 'OK') {
+                        console.log(results[0]);
+                        state.focus_lat_lng = results[0].geometry.location.toJSON();
+                        ele.add_card_form_container.find('input[name=address]').val(results[0].formatted_address);
+                        update();
+                    }
+                })
+            }
             e.stop();
         });
     }
 
     function update() {
         ele.selected_container.empty();
+        ele.selected_card = null;
+        ele.add_card_form_container.hide();
+        unfocusOnLatLng();
+
+        if (state.focus_lat_lng) {
+            focusOnLatLng();
+        }
+
+        if (state.add_place) {
+            state.selected = null;
+            ele.add_card_form_container.show();
+        }
 
         if (state.selected !== null) {
             var sel_data = data.places[state.selected].fields;
@@ -74,6 +144,7 @@
             updateMarkers();
             state.places_changed = false;
         }
+
     }
 
     function updateMarkers() {
@@ -91,6 +162,7 @@
     function createMarkers() {
         data.places.forEach(function(d, i) {
             var new_marker = new google.maps.Marker({
+                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
                 position: {lat: parseFloat(d.fields.lat), lng: parseFloat(d.fields.lng)},
                 title: d.fields.name,
                 map: ele.map
@@ -120,6 +192,39 @@
                     '</div>' +
                 '</div>').appendTo(ele.selected_container);
     }
+
+    function showAddForm() {
+        state.add_place = true;
+        update();
+    }
+
+    function hideAddForm() {
+        var inputs = ele.add_card_form_container.find('input');
+        var textareas = ele.add_card_form_container.find('textarea');
+
+        inputs.val('');
+        textareas.val('');
+
+        state.add_place = false;
+        state.focus_lat_lng = null;
+        update();
+    }
+
+    function focusOnLatLng() {
+        ele.focus_marker = new google.maps.Marker({
+            position: {lat: state.focus_lat_lng.lat, lng: state.focus_lat_lng.lng},
+            map: ele.map
+        })
+    }
+
+    function unfocusOnLatLng() {
+        if (ele.focus_marker) {
+            ele.focus_marker.setMap(null);
+            ele.focus_marker = null;
+        }
+    }
+
+    window.onload = init;
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_api_key }}&libraries=places&callback=initMap"
         async defer></script>
