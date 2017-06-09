@@ -15,9 +15,10 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from web.views import index
+from web.views import index, post_create_place
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^', index, name='index')
+    url(r'^create/place/$', post_create_place, name='create_place'),
+    url(r'^', index, name='index'),
 ]
