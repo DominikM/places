@@ -16,6 +16,7 @@
             <h1 class="ui header">Place Journal</h1>
             <div id="main-controls">
                 <button class="ui button" onclick="showAddForm()">Add Place</button>
+                <button class="ui button" onclick="showTogoForm()">Add To Go</button>
             </div>
             <div id="add-form-container">
                 <form class="ui form">
@@ -44,6 +45,27 @@
                     <input type="hidden" name="place_id">
                     <button class="ui primary button" onclick="submitAddForm(); return false;">Submit</button>
                     <button class="ui negative button" onclick="hideAddForm(); return false;">Cancel</button>
+                </form>
+            </div>
+            <div id="add-togo-container">
+                <form class="ui form">
+                    <div class="field">
+                        <label>Name</label>
+                        <input type="text" name="name" placeholder="Name of location">
+                    </div>
+                    <div class="field">
+                        <label>Address</label>
+                        <input type="text" name="address" placeholder="Type address or click on map">
+                    </div>
+                    <div class="field">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2"></textarea>
+                    </div>
+                    <input type="hidden" name="lat">
+                    <input type="hidden" name="lng">
+                    <input type="hidden" name="place_id">
+                    <button class="ui primary button" onclick="submitTogoForm(); return false;">Submit</button>
+                    <button class="ui negative button" onclick="hideTogoForm(); return false;">Cancel</button>
                 </form>
             </div>
             <div id="selected-container"></div>
@@ -91,7 +113,8 @@
 
 <script>
     var data = {
-        places: {{ places | safe}}
+        places: {{ places | safe}},
+        togos: []
     };
     var state = {
         selected: null, // index of places/markers[] that is selected, null if nothing is selected
@@ -105,19 +128,21 @@
         selected_card: null,
         map: null,
         markers: [],
-        autocomplete: null,
+        add_place_autocomplete: null,
+        add_togo_autocomplete: null,
         add_form_container: $('#add-form-container'),
+        add_togo_container: $('#add-togo-container'),
         focus_marker: null
     };
 
     function init() {
         ele.add_form_container.hide();
-        ele.autocomplete = new google.maps.places.Autocomplete(
+        ele.add_place_autocomplete = new google.maps.places.Autocomplete(
                 ele.add_form_container.find('input[name=address]')[0]
         );
-        ele.autocomplete.addListener('place_changed', function () {
+        ele.add_place_autocomplete.addListener('place_changed', function () {
             console.log('firing');
-            var place = ele.autocomplete.getPlace();
+            var place = ele.add_place_autocomplete.getPlace();
             state.focus_lat_lng = {
                 lat: place.geometry.location.lat(),
                 lng: place.geometry.location.lng()
@@ -125,6 +150,22 @@
             ele.add_form_container.find('input[name=lat]').val(state.focus_lat_lng.lat);
             ele.add_form_container.find('input[name=lng]').val(state.focus_lat_lng.lng);
             ele.add_form_container.find('input[name="place_id"]').val(place.place_id);
+            update();
+        });
+
+        ele.add_togo_container.hide();
+        ele.add_togo_autocomplete = new google.maps.places.Autocomplete(
+                ele.add_togo_container.find('input[name=address]')[0]
+        );
+        ele.add_togo_autocomplete.addListener('place_changed', function () {
+            var place = ele.add_togo_autocomplete.getPlace();
+            state.focus_lat_lng = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng()
+            };
+            ele.add_togo_container.find('input[name=lat]').val(state.focus_lat_lng.lat);
+            ele.add_togo_container.find('input[name=lng]').val(state.focus_lat_lng.lng);
+            ele.add_togo_container.find('input[name="place_id"]').val(place.place_id);
             update();
         });
     }
@@ -144,15 +185,19 @@
 
     function setupListeners() {
         ele.map.addListener('click', function(e) {
-            if (state.add_place) {
+            if (state.add_place || state.add_togo) {
+                var form_container;
+                if (state.add_place) form_container = ele.add_form_container;
+                else form_container = ele.add_togo_container;
+
                 ele.geocoder.geocode({'location': e.latLng}, function(results, status) {
                     if (status === 'OK') {
                         console.log(results[0]);
                         state.focus_lat_lng = results[0].geometry.location.toJSON();
-                        ele.add_form_container.find('input[name=address]').val(results[0].formatted_address);
-                        ele.add_form_container.find('input[name=lat]').val(state.focus_lat_lng.lat);
-                        ele.add_form_container.find('input[name=lng]').val(state.focus_lat_lng.lng);
-                        ele.add_form_container.find('input[name="place_id"]').val(results[0].place_id);
+                        form_container.find('input[name=address]').val(results[0].formatted_address);
+                        form_container.find('input[name=lat]').val(state.focus_lat_lng.lat);
+                        form_container.find('input[name=lng]').val(state.focus_lat_lng.lng);
+                        form_container.find('input[name="place_id"]').val(results[0].place_id);
                         update();
                     }
                 })
@@ -165,6 +210,7 @@
         ele.selected_container.empty();
         ele.selected_card = null;
         ele.add_form_container.hide();
+        ele.add_togo_container.hide();
         unfocusOnLatLng();
 
         if (state.focus_lat_lng) {
@@ -174,6 +220,11 @@
         if (state.add_place) {
             state.selected = null;
             ele.add_form_container.show();
+        }
+
+        if (state.add_togo) {
+            state.selected = null;
+            ele.add_togo_container.show();
         }
 
         if (state.selected !== null) {
@@ -235,6 +286,7 @@
     }
 
     function showAddForm() {
+        state.add_togo = false;
         state.add_place = true;
         update();
     }
@@ -294,6 +346,47 @@
             ele.focus_marker.setMap(null);
             ele.focus_marker = null;
         }
+    }
+
+    function showTogoForm() {
+        state.add_togo = true;
+        state.add_place = false;
+        update()
+    }
+
+    function hideTogoForm() {
+        var inputs = ele.add_togo_container.find('input');
+        var textareas = ele.add_togo_container.find('textarea');
+
+        inputs.val('');
+        textareas.val('');
+
+        state.add_togo = false;
+        state.focus_lat_lng = null;
+        update();
+    }
+
+    function submitTogoForm() {
+        var form = ele.add_togo_container.find('.ui.form');
+        form.form({
+            fields: {
+                name: 'empty',
+                address: 'empty',
+            },
+            onSuccess: createTogo
+        });
+        form.form('validate form');
+    }
+
+    function createTogo(e, togo_data) {
+        $.post('/create/togo/', togo_data, function(result) {
+            if (result.status === 'OK') {
+                data.togos.push(result.place);
+                state.togos_changed = true;
+                state.add_togo = false;
+                state.focus_lat_lng = null;
+            }
+        })
     }
 
     window.onload = init;
