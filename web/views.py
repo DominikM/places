@@ -11,10 +11,12 @@ from datetime import datetime
 # Create your views here.
 
 def index(request):
-    places = serializers.serialize('json', Place.objects.all())
+    places = serializers.serialize('json', Place.objects.filter(togo=False))
+    togos = serializers.serialize('json', Place.objects.filter(togo=True))
     context = {
         'gmaps_api_key': GMAPS_API_KEY,
-        'places': places
+        'places': places,
+        'togos': togos
     }
     return render(request, 'web/index.html', context)
 
@@ -79,6 +81,54 @@ def post_create_place(request):
             'message': 'Created place and CheckIn',
             'place': {'fields': model_to_dict(new_place)},
             'checkin': {'fields': model_to_dict(new_checkin)}
+        })
+
+
+@require_http_methods(['POST'])
+def post_create_togo(request):
+    new_togo_data = {}
+    error = ''
+
+    if request.POST.get('name'):
+        new_togo_data['name'] = request.POST['name']
+    else:
+        error += 'Need a name for the place. '
+
+    if request.POST.get('address'):
+        new_togo_data['address'] = request.POST['address']
+    else:
+        error += 'Need an address for the place. '
+
+    if request.POST.get('lat'):
+        new_togo_data['lat'] = float(request.POST['lat'])
+    else:
+        error += 'Need a latitude for the place. '
+
+    if request.POST.get('lng'):
+        new_togo_data['lng'] = float(request.POST['lng'])
+    else:
+        error += 'Need a longitude for the place. '
+
+    if request.POST.get('notes'):
+        new_togo_data['notes'] = request.POST['notes']
+    else:
+        new_togo_data['notes'] = ''
+
+    new_togo_data['togo'] = True
+
+    if error:
+        return JsonResponse({
+            'status': 'FAIL',
+            'message': error
+        })
+
+    else:
+        new_togo = Place.objects.create(**new_togo_data)
+
+        return JsonResponse({
+            'status': 'OK',
+            'message': 'Created place and CheckIn',
+            'place': {'fields': model_to_dict(new_togo)}
         })
 
 

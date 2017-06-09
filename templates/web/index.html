@@ -114,12 +114,12 @@
 <script>
     var data = {
         places: {{ places | safe}},
-        togos: []
+        togos: {{ togos | safe }}
     };
     var state = {
         selected: null, // index of places/markers[] that is selected, null if nothing is selected
         add_place: false, // if the button has been pressed
-        places_changed: false, // if the data changed
+        markers_changed: false, // if the data changed
         focus_lat_lng: null, // if focused on place, this is {lat: lat, lng: lmg}, else null
     };
     var ele = {
@@ -232,9 +232,9 @@
             createPlaceCard(sel_data.name, sel_data.address, sel_data.notes, ""); // TODO: add last visted field
         }
 
-        if (state.places_changed) {
+        if (state.markers_changed) {
             updateMarkers();
-            state.places_changed = false;
+            state.markers_changed = false;
         }
 
     }
@@ -253,6 +253,20 @@
 
     function createMarkers() {
         data.places.forEach(function(d, i) {
+            var new_marker = new google.maps.Marker({
+                icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                position: {lat: parseFloat(d.fields.lat), lng: parseFloat(d.fields.lng)},
+                title: d.fields.name,
+                map: ele.map
+            });
+            new_marker.addListener('click', function() {
+                state.selected = i;
+                update();
+            });
+            ele.markers.push(new_marker)
+        });
+
+        data.togos.forEach(function(d, i) {
             var new_marker = new google.maps.Marker({
                 icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
                 position: {lat: parseFloat(d.fields.lat), lng: parseFloat(d.fields.lng)},
@@ -324,9 +338,10 @@
                     console.log(result);
                     if (result.status === 'OK') {
                         data.places.push(result.place);
-                        state.places_changed = true;
+                        state.markers_changed = true;
                         state.add_place = false;
                         state.focus_lat_lng = null;
+                        hideAddForm();
                         update();
                         // TODO: add in checkin data
                     }
@@ -382,9 +397,11 @@
         $.post('/create/togo/', togo_data, function(result) {
             if (result.status === 'OK') {
                 data.togos.push(result.place);
-                state.togos_changed = true;
+                state.markers_changed = true;
                 state.add_togo = false;
                 state.focus_lat_lng = null;
+                hideTogoForm();
+                update();
             }
         })
     }

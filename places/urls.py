@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from web.views import index, post_create_place
+from web.views import index, post_create_place, post_create_togo
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^create/place/$', post_create_place, name='create_place'),
+    url(r'^create/togo/$', post_create_togo, name='create_togo'),
     url(r'^', index, name='index'),
 ]
