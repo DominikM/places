@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.core import serializers
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http.response import JsonResponse
 from django.forms.models import model_to_dict
 from places.settings import GMAPS_API_KEY
@@ -10,6 +11,7 @@ from datetime import datetime
 
 # Create your views here.
 
+@ensure_csrf_cookie
 def index(request):
     places = serializers.serialize('json', Place.objects.filter(togo=False))
     togos = serializers.serialize('json', Place.objects.filter(togo=True))
