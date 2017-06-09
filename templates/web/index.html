@@ -17,7 +17,7 @@
             <div id="main-controls">
                 <button class="ui button" onclick="showAddForm()">Add Place</button>
             </div>
-            <div id="add-card-form-container">
+            <div id="add-form-container">
                 <form class="ui form">
                     <div class="field">
                         <label>Name</label>
@@ -29,17 +29,20 @@
                     </div>
                     <div class="field">
                         <label>Notes</label>
-                        <textarea rows="2"></textarea>
+                        <textarea name="notes" rows="2"></textarea>
                     </div>
                     <div class="field">
                         <label>Last visit</label>
-                        <input type="date" name="last-visit">
+                        <input type="date" name="date">
                     </div>
                     <div class="field">
                         <label>Notes about last visit</label>
-                        <textarea rows="2"></textarea>
+                        <textarea name=checkin_notes" rows="2"></textarea>
                     </div>
-                    <button class="ui primary button" onclick="return false;">Submit</button>
+                    <input type="hidden" name="lat">
+                    <input type="hidden" name="lng">
+                    <input type="hidden" name="place_id">
+                    <button class="ui primary button" onclick="submitAddForm(); return false;">Submit</button>
                     <button class="ui negative button" onclick="hideAddForm(); return false;">Cancel</button>
                 </form>
             </div>
@@ -53,6 +56,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+</script>
 
 <script>
     var data = {
@@ -71,14 +106,14 @@
         map: null,
         markers: [],
         autocomplete: null,
-        add_card_form_container: $('#add-card-form-container'),
+        add_form_container: $('#add-form-container'),
         focus_marker: null
     };
 
     function init() {
-        ele.add_card_form_container.hide();
+        ele.add_form_container.hide();
         ele.autocomplete = new google.maps.places.Autocomplete(
-                ele.add_card_form_container.find('input[name=address]')[0]
+                ele.add_form_container.find('input[name=address]')[0]
         );
         ele.autocomplete.addListener('place_changed', function () {
             console.log('firing');
@@ -87,6 +122,9 @@
                 lat: place.geometry.location.lat(),
                 lng: place.geometry.location.lng()
             };
+            ele.add_form_container.find('input[name=lat]').val(state.focus_lat_lng.lat);
+            ele.add_form_container.find('input[name=lng]').val(state.focus_lat_lng.lng);
+            ele.add_form_container.find('input[name="place_id"]').val(place.place_id);
             update();
         });
     }
@@ -111,7 +149,10 @@
                     if (status === 'OK') {
                         console.log(results[0]);
                         state.focus_lat_lng = results[0].geometry.location.toJSON();
-                        ele.add_card_form_container.find('input[name=address]').val(results[0].formatted_address);
+                        ele.add_form_container.find('input[name=address]').val(results[0].formatted_address);
+                        ele.add_form_container.find('input[name=lat]').val(state.focus_lat_lng.lat);
+                        ele.add_form_container.find('input[name=lng]').val(state.focus_lat_lng.lng);
+                        ele.add_form_container.find('input[name="place_id"]').val(results[0].place_id);
                         update();
                     }
                 })
@@ -123,7 +164,7 @@
     function update() {
         ele.selected_container.empty();
         ele.selected_card = null;
-        ele.add_card_form_container.hide();
+        ele.add_form_container.hide();
         unfocusOnLatLng();
 
         if (state.focus_lat_lng) {
@@ -132,7 +173,7 @@
 
         if (state.add_place) {
             state.selected = null;
-            ele.add_card_form_container.show();
+            ele.add_form_container.show();
         }
 
         if (state.selected !== null) {
@@ -199,8 +240,8 @@
     }
 
     function hideAddForm() {
-        var inputs = ele.add_card_form_container.find('input');
-        var textareas = ele.add_card_form_container.find('textarea');
+        var inputs = ele.add_form_container.find('input');
+        var textareas = ele.add_form_container.find('textarea');
 
         inputs.val('');
         textareas.val('');
@@ -208,6 +249,37 @@
         state.add_place = false;
         state.focus_lat_lng = null;
         update();
+    }
+
+    function submitAddForm() {
+        var form = ele.add_form_container.find('.ui.form');
+        form.form({
+            fields: {
+                name: 'empty',
+                address: 'empty',
+                date: 'empty'
+            },
+            onSuccess: createPlace
+        });
+        form.form('validate form');
+    }
+
+    function createPlace(e, place_data) {
+        $.post(
+                '/create/place/',
+                place_data,
+                function (result) {
+                    console.log(result);
+                    if (result.status === 'OK') {
+                        data.places.push(result.place);
+                        state.places_changed = true;
+                        state.add_place = false;
+                        state.focus_lat_lng = null;
+                        update();
+                        // TODO: add in checkin data
+                    }
+                }
+        )
     }
 
     function focusOnLatLng() {

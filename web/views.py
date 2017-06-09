@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.core import serializers
 from django.views.decorators.http import require_http_methods
 from django.http.response import JsonResponse
+from django.forms.models import model_to_dict
 from places.settings import GMAPS_API_KEY
 from .models import Place, CheckIn
 from datetime import datetime
@@ -76,8 +77,8 @@ def post_create_place(request):
         return JsonResponse({
             'status': 'OK',
             'message': 'Created place and CheckIn',
-            'place': serializers.serialize('json', [new_place])[1:-1],
-            'checkin': serializers.serialize('json', [new_checkin])[1:-1]
+            'place': {'fields': model_to_dict(new_place)},
+            'checkin': {'fields': model_to_dict(new_checkin)}
         })
 
 
