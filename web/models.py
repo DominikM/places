@@ -16,6 +16,7 @@ class Place(models.Model):
     lat = models.DecimalField(max_digits=8, decimal_places=6)
     lng = models.DecimalField(max_digits=9, decimal_places=6)
     notes = models.TextField()
+    place_id = models.CharField(max_length=100, null=True) # for google places api, may not be necessary
 
     def __str__(self):
         return self.name
