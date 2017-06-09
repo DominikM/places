@@ -2,7 +2,7 @@ from django.db import models
 
 
 class CheckIn(models.Model):
-    date_and_time = models.DateTimeField()
+    date = models.DateField()
     notes = models.TextField()
     place = models.ForeignKey('Place')
 
