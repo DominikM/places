@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from django.core import serializers
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http.response import JsonResponse
@@ -11,10 +12,10 @@ from datetime import datetime
 
 # Create your views here.
 
-@ensure_csrf_cookie
+@login_required
 def index(request):
-    places = serializers.serialize('json', Place.objects.filter(togo=False))
-    togos = serializers.serialize('json', Place.objects.filter(togo=True))
+    places = serializers.serialize('json', request.user.place_set.filter(togo=False))
+    togos = serializers.serialize('json', request.user.place_set.filter(togo=True))
     context = {
         'gmaps_api_key': GMAPS_API_KEY,
         'places': places,
@@ -23,6 +24,7 @@ def index(request):
     return render(request, 'web/index.html', context)
 
 
+@login_required
 @require_http_methods(['POST'])
 def post_create_place(request):
     new_place_data = {}
@@ -74,6 +76,7 @@ def post_create_place(request):
         })
 
     else:
+        new_place_data['user'] = request.user
         new_place = Place.objects.create(**new_place_data)
         new_checkin_data['place'] = new_place
         new_checkin = CheckIn.objects.create(**new_checkin_data)
@@ -86,6 +89,7 @@ def post_create_place(request):
         })
 
 
+@login_required
 @require_http_methods(['POST'])
 def post_create_togo(request):
     new_togo_data = {}
@@ -116,7 +120,6 @@ def post_create_togo(request):
     else:
         new_togo_data['notes'] = ''
 
-    new_togo_data['togo'] = True
 
     if error:
         return JsonResponse({
@@ -125,6 +128,8 @@ def post_create_togo(request):
         })
 
     else:
+        new_togo_data['togo'] = True
+        new_togo_data['user'] = request.user
         new_togo = Place.objects.create(**new_togo_data)
 
         return JsonResponse({

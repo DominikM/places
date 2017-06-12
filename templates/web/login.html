@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="{% static 'semantic/semantic.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+    <script src="{% static 'js/jquery-3.2.1.min.js' %}"></script>
+    <script src="{% static 'semantic/semantic.min.js' %}"></script>
+    <title>Login</title>
+</head>
+<body>
+
+<div id="login-container" class="ui container">
+    <h1>Login to your place journal</h1>
+    {% if form.errors %}
+    <form class="ui error form" method="post" action="{% url 'login' %}">
+    {% else %}
+    <form class="ui form" method="post" action="{% url 'login' %}">
+    {% endif %}
+    {% csrf_token %}
+        <div class="field">
+            <label for="id_username">Username</label>
+            {{ form.username }}
+        </div>
+        <div class="field">
+            <label for="id_password">Password</label>
+            {{ form.password }}
+        </div>
+        <div class="ui error message">
+            <p>Your username and password didn't match. Please try again.</p>
+        </div>
+        <input class="ui submit button" type="submit" value="Login">
+        <input type="hidden" name="next" value="{{ next }}" />
+    </form>
+</div>
+
+</body>
+</html>

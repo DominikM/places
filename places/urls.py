@@ -15,10 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from web.views import index, post_create_place, post_create_togo
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^login/$', auth_views.LoginView.as_view(template_name="web/login.html"), name='login'),
     url(r'^create/place/$', post_create_place, name='create_place'),
     url(r'^create/togo/$', post_create_togo, name='create_togo'),
     url(r'^', index, name='index'),
