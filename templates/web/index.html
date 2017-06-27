@@ -69,6 +69,19 @@
                     <button class="ui negative button" onclick="hideTogoForm(); return false;">Cancel</button>
                 </form>
             </div>
+            <div id='togo-card' class='ui centered card'>
+                <div class='content'>
+                    <div class='header'></div>
+                        <div class="notes"></div>
+                        <div class="meta">
+                            <div class="address"></div>
+                        </div>
+                    </div>
+                    <div class="ui bottom attached buttons">
+                        <button class="ui primary button">Went!</button>
+                        <button class="ui negative button">Delete</button>
+                    </div>
+                </div>
             <div id="selected-container"></div>
             <div class="ui section divider"></div>
         </div>
@@ -127,16 +140,18 @@
         selected_container: $('#selected-container'),
         geocoder: null,
         selected_card: null,
+        togo_card: $('#togo-card'),
         map: null,
         markers: [],
         add_place_autocomplete: null,
         add_togo_autocomplete: null,
         add_form_container: $('#add-form-container'),
         add_togo_container: $('#add-togo-container'),
-        focus_marker: null
+        focus_marker: null,
     };
 
     function init() {
+        // initialize add place form
         ele.add_form_container.hide();
         ele.add_place_autocomplete = new google.maps.places.Autocomplete(
                 ele.add_form_container.find('input[name=address]')[0]
@@ -154,6 +169,7 @@
             update();
         });
 
+        // initialize add togo form
         ele.add_togo_container.hide();
         ele.add_togo_autocomplete = new google.maps.places.Autocomplete(
                 ele.add_togo_container.find('input[name=address]')[0]
@@ -169,6 +185,9 @@
             ele.add_togo_container.find('input[name="place_id"]').val(place.place_id);
             update();
         });
+
+        // initialize togo card
+        ele.togo_card.hide();
     }
 
     function initMap() {
