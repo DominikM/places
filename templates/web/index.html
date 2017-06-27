@@ -72,16 +72,16 @@
             <div id='togo-card' class='ui centered card'>
                 <div class='content'>
                     <div class='header'></div>
-                        <div class="notes"></div>
-                        <div class="meta">
-                            <div class="address"></div>
-                        </div>
-                    </div>
-                    <div class="ui bottom attached buttons">
-                        <button class="ui primary button">Went!</button>
-                        <button class="ui negative button">Delete</button>
+                    <div class="notes"></div>
+                    <div class="meta">
+                        <div class="address"></div>
                     </div>
                 </div>
+                <div class="ui bottom attached buttons">
+                    <button class="ui primary button">Went!</button>
+                    <button class="ui negative button">Delete</button>
+                </div>
+            </div>
             <div id="selected-container"></div>
             <div class="ui section divider"></div>
         </div>
@@ -228,6 +228,8 @@
 
     function update() {
         ele.selected_container.empty();
+        ele.togo_card.hide();
+
         ele.selected_card = null;
         ele.add_form_container.hide();
         ele.add_togo_container.hide();
@@ -249,12 +251,16 @@
 
         if (state.selected !== null) {
             var sel_data;
-            if (state.selected.type === 'place')
+            if (state.selected.type === 'place') {
                 sel_data = data.places[state.selected.i].fields;
-            else
-                sel_data = data.togos[state.selected.i].fields;
+                createPlaceCard(sel_data.name, sel_data.address, sel_data.notes, ""); // TODO: add last visted field
+            }
 
-            createPlaceCard(sel_data.name, sel_data.address, sel_data.notes, ""); // TODO: add last visted field
+            else {
+                sel_data = data.togos[state.selected.i].fields;
+                createTogoCard(sel_data.name, sel_data.address, sel_data.notes);
+            }
+
         }
 
         if (state.markers_changed) {
@@ -322,6 +328,14 @@
                         '<button class="ui negative button">Delete</button>' +
                     '</div>' +
                 '</div>').appendTo(ele.selected_container);
+    }
+
+    function createTogoCard(name, address, notes) {
+        console.log(name);
+        ele.togo_card.find('.header').text(name);
+        ele.togo_card.find('.address').text(address);
+        ele.togo_card.find('.notes').text(notes);
+        ele.togo_card.show();
     }
 
     function showAddForm() {
