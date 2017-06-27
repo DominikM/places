@@ -118,7 +118,7 @@
         togos: {{ togos | safe }}
     };
     var state = {
-        selected: null, // index of places/markers[] that is selected, null if nothing is selected
+        selected: null, // {type: 'togo' or 'place', i: index of places/markers[] that is selected}, null if nothing is selected
         add_place: false, // if the button has been pressed
         markers_changed: false, // if the data changed
         focus_lat_lng: null, // if focused on place, this is {lat: lat, lng: lmg}, else null
@@ -229,7 +229,12 @@
         }
 
         if (state.selected !== null) {
-            var sel_data = data.places[state.selected].fields;
+            var sel_data;
+            if (state.selected.type === 'place')
+                sel_data = data.places[state.selected.i].fields;
+            else
+                sel_data = data.togos[state.selected.i].fields;
+
             createPlaceCard(sel_data.name, sel_data.address, sel_data.notes, ""); // TODO: add last visted field
         }
 
@@ -261,7 +266,7 @@
                 map: ele.map
             });
             new_marker.addListener('click', function() {
-                state.selected = i;
+                state.selected = {type: 'place', i: i};
                 update();
             });
             ele.markers.push(new_marker)
@@ -275,7 +280,7 @@
                 map: ele.map
             });
             new_marker.addListener('click', function() {
-                state.selected = i;
+                state.selected = {type: 'togo', i:i};
                 update();
             });
             ele.markers.push(new_marker)
