@@ -84,8 +84,8 @@ def post_create_place(request):
         return JsonResponse({
             'status': 'OK',
             'message': 'Created place and CheckIn',
-            'place': {'fields': model_to_dict(new_place)},
-            'checkin': {'fields': model_to_dict(new_checkin)}
+            'place': {'pk': new_place.id, 'fields': model_to_dict(new_place)},
+            'checkin': {'pk': new_checkin.id, 'fields': model_to_dict(new_checkin)}
         })
 
 
@@ -135,7 +135,7 @@ def post_create_togo(request):
         return JsonResponse({
             'status': 'OK',
             'message': 'Created place and CheckIn',
-            'place': {'fields': model_to_dict(new_togo)}
+            'place': {'pk': new_togo.id, 'fields': model_to_dict(new_togo)}
         })
 
 
