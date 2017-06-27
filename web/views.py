@@ -139,4 +139,29 @@ def post_create_togo(request):
         })
 
 
+@login_required
+@require_http_methods(['POST'])
+def post_delete_togo(request):
+    if request.POST.get('id'):
+        to_delete = int(request.POST['id'])
+    else:
+        return JsonResponse({
+            'status': 'FAIL',
+            'message': 'Must provide an id to delete. '
+        })
+
+    try:
+        Place.objects.get(id=to_delete).delete()
+    except Place.DoesNotExist:
+        return JsonResponse({
+            'status': 'FAIL',
+            'message': 'ID provided does not exist.'
+        })
+
+    return JsonResponse({
+        'status': 'OK',
+        'message': 'Deleted ToGo'
+    })
+
+
 
