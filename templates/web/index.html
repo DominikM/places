@@ -79,7 +79,7 @@
                 </div>
                 <div class="ui bottom attached buttons">
                     <button class="ui primary button">Went!</button>
-                    <button class="ui negative button">Delete</button>
+                    <button class="ui negative button" onclick="deleteToGo()">Delete</button>
                 </div>
             </div>
             <div id="selected-container"></div>
@@ -309,6 +309,20 @@
                 update();
             });
             ele.markers.push(new_marker)
+        })
+    }
+
+    function deleteToGo(){
+        var i = state.selected.i;
+        var id = data.togos[i].pk;
+        $.post('/delete/togo/', {id: id}, function(result) {
+            console.log(result);
+            if (result.status === 'OK') {
+                data.togos.splice(i, 1);
+                state.markers_changed = true;
+                state.selected = null;
+                update();
+            }
         })
     }
 
